@@ -1,0 +1,22 @@
+:: Create network
+docker network create two
+
+:: Build backend image
+docker build -t backend:latest .
+
+:: Run MongoDB
+docker run -d --name mongo --network two -e MONGO_INITDB_ROOT_USERNAME=root -e MONGO_INITDB_ROOT_PASSWORD=root mongo:6
+
+:: Run backend
+docker run -d --name backend --network two -p 3000:3000 -e MONGO_USER=root -e MONGO_PASS=root -e MONGO_DB=tododb -e MONGO_HOST=mongo -e PORT=3000 backend:latest
+
+:: Inspect logs (optional)
+docker logs mongo
+docker logs backend
+
+:: Open a shell inside backend (optional)
+docker exec -it backend sh
+
+:: Cleanup
+docker rm -f backend mongo
+docker network rm two
