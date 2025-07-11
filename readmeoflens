@@ -1,0 +1,170 @@
+✅ Project: React App + Backend + MongoDB (No Explicit Node.js Backend Code Outside Image)
+You deployed a backend app with MongoDB using Docker, Kubernetes, and Lens. Here's the full setup guide.
+
+🔧 Step-by-Step Commands
+🔹 1. Build and Push Backend Docker Image
+bash
+Copy
+Edit
+docker build -t saadsayyed/backend_app:v1 .
+docker push saadsayyed/backend_app:v1
+🔹 2. Create Kubernetes Namespace
+bash
+Copy
+Edit
+kubectl create namespace 2401179
+🔹 3. MongoDB Deployment and Service YAML
+Save as: mongo-deployment.yaml
+
+yaml
+Copy
+Edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: "2401179"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:6
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: root
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: root
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: "2401179"
+spec:
+  selector:
+    app: mongo
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
+  type: ClusterIP
+💡 Mongo host for backend: mongo.2401179.svc.cluster.local
+
+Apply with:
+
+bash
+Copy
+Edit
+kubectl apply -f mongo-deployment.yaml
+🔹 4. Backend Deployment and Service YAML
+Save as: backend-deployment.yaml
+
+yaml
+Copy
+Edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: "2401179"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: saadsayyed/backend_app:v1
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MONGO_USER
+              value: root
+            - name: MONGO_PASS
+              value: root
+            - name: MONGO_DB
+              value: tododb
+            - name: MONGO_HOST
+              value: mongo.2401179.svc.cluster.local
+            - name: PORT
+              value: "3000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: "2401179"
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      nodePort: 30284
+  type: NodePort
+Apply with:
+
+bash
+Copy
+Edit
+kubectl apply -f backend-deployment.yaml
+🔹 5. Accessing the Backend API
+Your Node IP (from kubectl get nodes -o wide) is:
+
+Copy
+Edit
+192.168.19.250
+Your backend NodePort is:
+
+Copy
+Edit
+30284
+✅ So access your API at:
+
+arduino
+Copy
+Edit
+http://192.168.19.250:30284/todos
+📂 Optional: Folder Structure
+bash
+Copy
+Edit
+/project-root
+├── backend-deployment.yaml
+├── mongo-deployment.yaml
+├── Dockerfile
+├── server.js
+├── models/
+│   └── Todo.js
+└── .env
+🧪 Example Requests
+GET Todos:
+
+bash
+Copy
+Edit
+curl http://192.168.19.250:30284/todos
+POST Todo:
+
+bash
+Copy
+Edit
+curl -X POST http://192.168.19.250:30284/todos \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Finish deployment", "completed": false}'

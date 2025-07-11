@@ -20,3 +20,28 @@ docker exec -it backend sh
 :: Cleanup
 docker rm -f backend mongo
 docker network rm two
+
+
+
+-----------------------------------------------------------------------
+now to add volume 
+
+:: Create a volume
+docker volume create mongo-data
+
+:: Run MongoDB with volume
+docker run -d --name mongo --network two ^
+  -e MONGO_INITDB_ROOT_USERNAME=root ^
+  -e MONGO_INITDB_ROOT_PASSWORD=root ^
+  -v mongo-data:/data/db ^
+  mongo:6
+
+:: Run backend
+docker run -d --name backend --network two ^
+  -p 3000:3000 ^
+  -e MONGO_USER=root ^
+  -e MONGO_PASS=root ^
+  -e MONGO_DB=tododb ^
+  -e MONGO_HOST=mongo ^
+  -e PORT=3000 ^
+  backend:latest
